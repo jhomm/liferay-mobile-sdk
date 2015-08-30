@@ -37,8 +37,6 @@ public class ObjectiveCUtil extends LanguageUtil {
 
 	public static final String NS_NUMBER = "NSNumber *";
 
-	public static final String NS_OPERATION = "NSOperation *";
-
 	public static final String NS_STRING = "NSString *";
 
 	public String getParamValue(String name, String type) {
@@ -51,6 +49,9 @@ public class ObjectiveCUtil extends LanguageUtil {
 		}
 		else if (type.equals(NS_DATA)) {
 			name = "[self toString:" + name + "]";
+		}
+		else {
+			name = "[self checkNull: " + name + "]";
 		}
 
 		return name;

@@ -24,7 +24,7 @@
 		@"groupId": @(groupId),
 		@"privateLayout": @(privateLayout),
 		@"layoutSetPrototypeLinkEnabled": @(layoutSetPrototypeLinkEnabled),
-		@"layoutSetPrototypeUuid": layoutSetPrototypeUuid
+		@"layoutSetPrototypeUuid": [self checkNull: layoutSetPrototypeUuid]
 	}];
 
 	NSDictionary *_command = @{@"/layoutset/update-layout-set-prototype-link-enabled": _params};
@@ -45,26 +45,26 @@
 	[self.session invoke:_command error:error];
 }
 
-- (NSOperation *)updateLogoWithGroupId:(long long)groupId privateLayout:(BOOL)privateLayout logo:(BOOL)logo file:(LRUploadData *)file error:(NSError **)error {
+- (void)updateLogoWithGroupId:(long long)groupId privateLayout:(BOOL)privateLayout logo:(BOOL)logo file:(LRUploadData *)file error:(NSError **)error {
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
 		@"privateLayout": @(privateLayout),
 		@"logo": @(logo),
-		@"file": file
+		@"file": [self checkNull: file]
 	}];
 
 	NSDictionary *_command = @{@"/layoutset/update-logo": _params};
 
-	return [self.session upload:_command error:error];
+	[self.session invoke:_command error:error];
 }
 
 - (NSDictionary *)updateLookAndFeelWithGroupId:(long long)groupId privateLayout:(BOOL)privateLayout themeId:(NSString *)themeId colorSchemeId:(NSString *)colorSchemeId css:(NSString *)css wapTheme:(BOOL)wapTheme error:(NSError **)error {
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
 		@"privateLayout": @(privateLayout),
-		@"themeId": themeId,
-		@"colorSchemeId": colorSchemeId,
-		@"css": css,
+		@"themeId": [self checkNull: themeId],
+		@"colorSchemeId": [self checkNull: colorSchemeId],
+		@"css": [self checkNull: css],
 		@"wapTheme": @(wapTheme)
 	}];
 
@@ -77,7 +77,7 @@
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
 		@"privateLayout": @(privateLayout),
-		@"settings": settings
+		@"settings": [self checkNull: settings]
 	}];
 
 	NSDictionary *_command = @{@"/layoutset/update-settings": _params};
@@ -89,7 +89,7 @@
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
 		@"privateLayout": @(privateLayout),
-		@"virtualHost": virtualHost
+		@"virtualHost": [self checkNull: virtualHost]
 	}];
 
 	NSDictionary *_command = @{@"/layoutset/update-virtual-host": _params};

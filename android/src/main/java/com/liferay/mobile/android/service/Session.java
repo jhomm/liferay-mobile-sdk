@@ -15,7 +15,9 @@
 package com.liferay.mobile.android.service;
 
 import com.liferay.mobile.android.auth.Authentication;
-import com.liferay.mobile.android.task.callback.AsyncTaskCallback;
+import com.liferay.mobile.android.callback.Callback;
+
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,24 +27,28 @@ import org.json.JSONObject;
  */
 public interface Session {
 
-	public Authentication getAuthentication();
+	Authentication getAuthentication();
 
-	public AsyncTaskCallback getCallback();
+	Callback getCallback();
 
-	public int getConnectionTimeout();
+	int getConnectionTimeout();
 
-	public String getServer();
+	Map<String, String> getHeaders();
 
-	public JSONArray invoke(JSONObject command) throws Exception;
+	String getServer();
 
-	public void setAuthentication(Authentication authentication);
+	JSONArray invoke(JSONObject command) throws Exception;
 
-	public void setCallback(AsyncTaskCallback callback);
+	void setAuthentication(Authentication authentication);
 
-	public void setConnectionTimeout(int connectionTimeout);
+	void setCallback(Callback callback);
 
-	public void setServer(String server);
+	void setConnectionTimeout(int connectionTimeout);
 
-	public JSONArray upload(JSONObject command) throws Exception;
+	void setHeaders(Map<String, String> headers);
+
+	void setServer(String server);
+
+	JSONArray upload(JSONObject command) throws Exception;
 
 }

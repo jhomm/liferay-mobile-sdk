@@ -14,34 +14,74 @@
 
 package com.liferay.mobile.android.auth.basic;
 
-import org.apache.http.HttpRequest;
-import org.apache.http.auth.AuthScope;
+import com.liferay.mobile.android.http.Headers;
+
+import com.squareup.okhttp.Authenticator;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Request.Builder;
+import com.squareup.okhttp.Response;
+
+import java.io.IOException;
+
+import java.net.Proxy;
+
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.auth.DigestScheme;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicHttpRequest;
 
 /**
- * @author Bruno Farache
+ * @author Silvio Santos
  */
-public class DigestAuthentication extends BasicAuthentication {
+public class DigestAuthentication extends BasicAuthentication
+	implements Authenticator {
 
 	public DigestAuthentication(String username, String password) {
 		super(username, password);
 	}
 
-	public void authenticate(HttpClientBuilder clientBuilder) {
-		CredentialsProvider provider = new BasicCredentialsProvider();
-
-		provider.setCredentials(
-			new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
-			new UsernamePasswordCredentials(username, password));
-
-		clientBuilder.setDefaultCredentialsProvider(provider);
+	@Override
+	public void authenticate(com.liferay.mobile.android.http.Request request) {
 	}
 
 	@Override
-	public void authenticate(HttpRequest request) {
+	public Request authenticate(Proxy proxy, Response response)
+		throws IOException {
+
+		Request request = response.request();
+		Builder builder = request.newBuilder();
+
+		try {
+			BasicHeader authenticateHeader = new BasicHeader(
+				Headers.WWW_AUTHENTICATE,
+				response.header(Headers.WWW_AUTHENTICATE));
+
+			DigestScheme scheme = new DigestScheme();
+			scheme.processChallenge(authenticateHeader);
+
+			BasicHttpRequest basicHttpRequest = new BasicHttpRequest(
+				request.method(), request.uri().getPath());
+
+			UsernamePasswordCredentials credentials =
+				new UsernamePasswordCredentials(username, password);
+
+			String authorizationHeader = scheme.authenticate(
+				credentials, basicHttpRequest).getValue();
+
+			builder.addHeader(Headers.AUTHORIZATION, authorizationHeader);
+		}
+		catch (Exception e) {
+			throw new IOException(e);
+		}
+
+		return builder.build();
+	}
+
+	@Override
+	public Request authenticateProxy(Proxy proxy, Response response)
+		throws IOException {
+
+		return null;
 	}
 
 }

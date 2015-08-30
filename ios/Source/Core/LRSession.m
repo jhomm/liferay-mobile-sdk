@@ -15,6 +15,7 @@
 #import "LRSession.h"
 
 #import "LRHttpUtil.h"
+#import "LRUploadData.h"
 #import "LRUploadUtil.h"
 #import "LRValidator.h"
 
@@ -113,13 +114,41 @@ static NSOperationQueue *_DEFAULT_QUEUE;
 	return _DEFAULT_QUEUE;
 }
 
-- (NSOperation *)upload:(NSDictionary *)command error:(NSError **)error {
+- (id)upload:(NSDictionary *)command error:(NSError **)error {
+	if (![self _hasUploadData:command]) {
+		return [self invoke:command error:error];
+	}
+
 	if (!self.callback) {
 		[NSException raise:@"Upload Exception"
 			format:@"Set a callback to the session before uploading files"];
 	}
 
-	return [LRUploadUtil upload:self command:command error:error];
+	[LRUploadUtil upload:self command:command error:error];
+	
+	return nil;
+}
+
+#pragma mark - Private methods
+
+- (BOOL)_hasUploadData:(NSDictionary *)command {
+	if ([command count] == 0) {
+		return NO;
+	}
+
+	NSString *first = [[command allKeys] objectAtIndex:0];
+	NSDictionary *params = [command objectForKey:first];
+
+	for (NSString *key in [params allKeys]) {
+		NSString *paramClazz = NSStringFromClass([params[key] class]);
+		NSString *uploadDataClazz = NSStringFromClass([LRUploadData class]);
+
+		if ([paramClazz isEqualToString:uploadDataClazz]) {
+			return YES;
+		}
+	}
+
+	return NO;
 }
 
 @end

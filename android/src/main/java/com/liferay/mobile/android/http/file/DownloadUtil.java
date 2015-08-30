@@ -14,53 +14,22 @@
 
 package com.liferay.mobile.android.http.file;
 
-import android.net.Uri;
-
 import com.liferay.mobile.android.auth.Authentication;
 import com.liferay.mobile.android.auth.basic.DigestAuthentication;
+import com.liferay.mobile.android.callback.file.FileProgressCallback;
 import com.liferay.mobile.android.http.HttpUtil;
 import com.liferay.mobile.android.service.Session;
 import com.liferay.mobile.android.util.PortalVersion;
 import com.liferay.mobile.android.util.Validator;
-
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGetHC4;
-import org.apache.http.impl.client.HttpClientBuilder;
-
-import static com.liferay.mobile.android.http.file.FileTransferUtil.*;
 
 /**
  * @author Bruno Farache
  */
 public class DownloadUtil {
 
-	public static void download(
-			Session session, OutputStream os, String URL,
-			FileProgressCallback callback)
-		throws Exception {
-
-		HttpClientBuilder clientBuilder = HttpUtil.getClientBuilder(session);
-		HttpGetHC4 request = HttpUtil.getHttpGet(session, URL);
-
-		HttpResponse response = clientBuilder.build().execute(request);
-		HttpUtil.checkStatusCode(request, response);
-		InputStream is = response.getEntity().getContent();
-
-		try {
-			transfer(request, is, os, callback);
-		}
-		finally {
-			close(is);
-		}
-	}
-
 	public static void downloadWebDAVFile(
 			Session session, int portalVersion, String groupFriendlyURL,
-			String folderPath, String fileTitle, OutputStream os,
-			FileProgressCallback callback)
+			String folderPath, String fileTitle, FileProgressCallback callback)
 		throws Exception {
 
 		Authentication auth = session.getAuthentication();
@@ -71,13 +40,13 @@ public class DownloadUtil {
 					"DigestAuthentication");
 		}
 
-		String URL = getWebDAVFileURL(
+		String url = getWebDAVFileURL(
 			session, portalVersion, groupFriendlyURL, folderPath, fileTitle);
 
-		download(session, os, URL, callback);
+		HttpUtil.download(session, url, callback);
 	}
 
-	public static String getWebDAVFileURL(
+	protected static String getWebDAVFileURL(
 			Session session, int portalVersion, String groupFriendlyURL,
 			String folderPath, String fileTitle)
 		throws Exception {
@@ -93,14 +62,10 @@ public class DownloadUtil {
 		sb.append(prependSlash(groupFriendlyURL));
 		sb.append("/document_library");
 
-		StringBuilder webdavPath = new StringBuilder();
+		sb.append(prependSlash(folderPath));
+		sb.append(prependSlash(fileTitle));
 
-		webdavPath.append(prependSlash(folderPath));
-		webdavPath.append(prependSlash(fileTitle));
-
-		sb.append(encoder.encode(webdavPath.toString()));
-
-		return sb.toString();
+		return HttpUtil.encodeURLPath(sb.toString());
 	}
 
 	protected static String prependSlash(String string) {
@@ -109,18 +74,6 @@ public class DownloadUtil {
 		}
 
 		return string;
-	}
-
-	protected static URLEncoder encoder = new URLEncoder();
-
-	protected static class URLEncoder {
-
-		public String encode(String path) throws Exception {
-			return Uri.encode(path, ALLOWED_URI_CHARS);
-		}
-
-		private final String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
-
 	}
 
 }

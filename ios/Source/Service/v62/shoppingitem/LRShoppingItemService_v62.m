@@ -23,7 +23,7 @@
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
 		@"categoryId": @(categoryId),
-		@"isbns": isbns
+		@"isbns": [self checkNull: isbns]
 	}];
 
 	NSDictionary *_command = @{@"/shoppingitem/add-book-items": _params};
@@ -31,37 +31,37 @@
 	[self.session invoke:_command error:error];
 }
 
-- (NSOperation *)addItemWithGroupId:(long long)groupId categoryId:(long long)categoryId sku:(NSString *)sku name:(NSString *)name description:(NSString *)description properties:(NSString *)properties fieldsQuantities:(NSString *)fieldsQuantities requiresShipping:(BOOL)requiresShipping stockQuantity:(int)stockQuantity featured:(BOOL)featured sale:(BOOL)sale smallImage:(BOOL)smallImage smallImageURL:(NSString *)smallImageURL smallFile:(LRUploadData *)smallFile mediumImage:(BOOL)mediumImage mediumImageURL:(NSString *)mediumImageURL mediumFile:(LRUploadData *)mediumFile largeImage:(BOOL)largeImage largeImageURL:(NSString *)largeImageURL largeFile:(LRUploadData *)largeFile itemFields:(NSArray *)itemFields itemPrices:(NSArray *)itemPrices serviceContext:(LRJSONObjectWrapper *)serviceContext error:(NSError **)error {
+- (NSDictionary *)addItemWithGroupId:(long long)groupId categoryId:(long long)categoryId sku:(NSString *)sku name:(NSString *)name description:(NSString *)description properties:(NSString *)properties fieldsQuantities:(NSString *)fieldsQuantities requiresShipping:(BOOL)requiresShipping stockQuantity:(int)stockQuantity featured:(BOOL)featured sale:(BOOL)sale smallImage:(BOOL)smallImage smallImageURL:(NSString *)smallImageURL smallFile:(LRUploadData *)smallFile mediumImage:(BOOL)mediumImage mediumImageURL:(NSString *)mediumImageURL mediumFile:(LRUploadData *)mediumFile largeImage:(BOOL)largeImage largeImageURL:(NSString *)largeImageURL largeFile:(LRUploadData *)largeFile itemFields:(NSArray *)itemFields itemPrices:(NSArray *)itemPrices serviceContext:(LRJSONObjectWrapper *)serviceContext error:(NSError **)error {
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
 		@"categoryId": @(categoryId),
-		@"sku": sku,
-		@"name": name,
-		@"description": description,
-		@"properties": properties,
-		@"fieldsQuantities": fieldsQuantities,
+		@"sku": [self checkNull: sku],
+		@"name": [self checkNull: name],
+		@"description": [self checkNull: description],
+		@"properties": [self checkNull: properties],
+		@"fieldsQuantities": [self checkNull: fieldsQuantities],
 		@"requiresShipping": @(requiresShipping),
 		@"stockQuantity": @(stockQuantity),
 		@"featured": @(featured),
 		@"sale": @(sale),
 		@"smallImage": @(smallImage),
-		@"smallImageURL": smallImageURL,
-		@"smallFile": smallFile,
+		@"smallImageURL": [self checkNull: smallImageURL],
+		@"smallFile": [self checkNull: smallFile],
 		@"mediumImage": @(mediumImage),
-		@"mediumImageURL": mediumImageURL,
-		@"mediumFile": mediumFile,
+		@"mediumImageURL": [self checkNull: mediumImageURL],
+		@"mediumFile": [self checkNull: mediumFile],
 		@"largeImage": @(largeImage),
-		@"largeImageURL": largeImageURL,
-		@"largeFile": largeFile,
-		@"itemFields": itemFields,
-		@"itemPrices": itemPrices,
+		@"largeImageURL": [self checkNull: largeImageURL],
+		@"largeFile": [self checkNull: largeFile],
+		@"itemFields": [self checkNull: itemFields],
+		@"itemPrices": [self checkNull: itemPrices],
 	}];
 
 	[self mangleWrapperWithParams:_params name:@"serviceContext" className:@"com.liferay.portal.service.ServiceContext" wrapper:serviceContext];
 
 	NSDictionary *_command = @{@"/shoppingitem/add-item": _params};
 
-	return [self.session upload:_command error:error];
+	return (NSDictionary *)[self.session upload:_command error:error];
 }
 
 - (void)deleteItemWithItemId:(long long)itemId error:(NSError **)error {
@@ -77,7 +77,7 @@
 - (NSNumber *)getCategoriesItemsCountWithGroupId:(long long)groupId categoryIds:(NSArray *)categoryIds error:(NSError **)error {
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"groupId": @(groupId),
-		@"categoryIds": categoryIds
+		@"categoryIds": [self checkNull: categoryIds]
 	}];
 
 	NSDictionary *_command = @{@"/shoppingitem/get-categories-items-count": _params};
@@ -144,38 +144,38 @@
 	return (NSArray *)[self.session invoke:_command error:error];
 }
 
-- (NSOperation *)updateItemWithItemId:(long long)itemId groupId:(long long)groupId categoryId:(long long)categoryId sku:(NSString *)sku name:(NSString *)name description:(NSString *)description properties:(NSString *)properties fieldsQuantities:(NSString *)fieldsQuantities requiresShipping:(BOOL)requiresShipping stockQuantity:(int)stockQuantity featured:(BOOL)featured sale:(BOOL)sale smallImage:(BOOL)smallImage smallImageURL:(NSString *)smallImageURL smallFile:(LRUploadData *)smallFile mediumImage:(BOOL)mediumImage mediumImageURL:(NSString *)mediumImageURL mediumFile:(LRUploadData *)mediumFile largeImage:(BOOL)largeImage largeImageURL:(NSString *)largeImageURL largeFile:(LRUploadData *)largeFile itemFields:(NSArray *)itemFields itemPrices:(NSArray *)itemPrices serviceContext:(LRJSONObjectWrapper *)serviceContext error:(NSError **)error {
+- (NSDictionary *)updateItemWithItemId:(long long)itemId groupId:(long long)groupId categoryId:(long long)categoryId sku:(NSString *)sku name:(NSString *)name description:(NSString *)description properties:(NSString *)properties fieldsQuantities:(NSString *)fieldsQuantities requiresShipping:(BOOL)requiresShipping stockQuantity:(int)stockQuantity featured:(BOOL)featured sale:(BOOL)sale smallImage:(BOOL)smallImage smallImageURL:(NSString *)smallImageURL smallFile:(LRUploadData *)smallFile mediumImage:(BOOL)mediumImage mediumImageURL:(NSString *)mediumImageURL mediumFile:(LRUploadData *)mediumFile largeImage:(BOOL)largeImage largeImageURL:(NSString *)largeImageURL largeFile:(LRUploadData *)largeFile itemFields:(NSArray *)itemFields itemPrices:(NSArray *)itemPrices serviceContext:(LRJSONObjectWrapper *)serviceContext error:(NSError **)error {
 	NSMutableDictionary *_params = [NSMutableDictionary dictionaryWithDictionary:@{
 		@"itemId": @(itemId),
 		@"groupId": @(groupId),
 		@"categoryId": @(categoryId),
-		@"sku": sku,
-		@"name": name,
-		@"description": description,
-		@"properties": properties,
-		@"fieldsQuantities": fieldsQuantities,
+		@"sku": [self checkNull: sku],
+		@"name": [self checkNull: name],
+		@"description": [self checkNull: description],
+		@"properties": [self checkNull: properties],
+		@"fieldsQuantities": [self checkNull: fieldsQuantities],
 		@"requiresShipping": @(requiresShipping),
 		@"stockQuantity": @(stockQuantity),
 		@"featured": @(featured),
 		@"sale": @(sale),
 		@"smallImage": @(smallImage),
-		@"smallImageURL": smallImageURL,
-		@"smallFile": smallFile,
+		@"smallImageURL": [self checkNull: smallImageURL],
+		@"smallFile": [self checkNull: smallFile],
 		@"mediumImage": @(mediumImage),
-		@"mediumImageURL": mediumImageURL,
-		@"mediumFile": mediumFile,
+		@"mediumImageURL": [self checkNull: mediumImageURL],
+		@"mediumFile": [self checkNull: mediumFile],
 		@"largeImage": @(largeImage),
-		@"largeImageURL": largeImageURL,
-		@"largeFile": largeFile,
-		@"itemFields": itemFields,
-		@"itemPrices": itemPrices,
+		@"largeImageURL": [self checkNull: largeImageURL],
+		@"largeFile": [self checkNull: largeFile],
+		@"itemFields": [self checkNull: itemFields],
+		@"itemPrices": [self checkNull: itemPrices],
 	}];
 
 	[self mangleWrapperWithParams:_params name:@"serviceContext" className:@"com.liferay.portal.service.ServiceContext" wrapper:serviceContext];
 
 	NSDictionary *_command = @{@"/shoppingitem/update-item": _params};
 
-	return [self.session upload:_command error:error];
+	return (NSDictionary *)[self.session upload:_command error:error];
 }
 
 @end

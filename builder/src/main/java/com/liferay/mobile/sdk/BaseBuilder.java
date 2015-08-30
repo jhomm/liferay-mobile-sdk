@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Bruno Farache
@@ -29,9 +31,8 @@ public abstract class BaseBuilder implements Builder {
 
 	@Override
 	public void buildAll(
-			Discovery discovery, String packageName, int version,
-			String destination)
-		throws Exception {
+		Discovery discovery, String packageName, int version,
+		String destination) {
 
 		HashMap<String, List<Action>> actionsMap =
 			new HashMap<String, List<Action>>();
@@ -40,8 +41,17 @@ public abstract class BaseBuilder implements Builder {
 
 		for (Action action : actions) {
 			String path = action.getPath();
+			int index = path.indexOf("/", 1);
 
-			String className = path.substring(1, path.indexOf("/", 1));
+			if (index == -1) {
+				_log.log(
+					Level.WARNING, "Action {0} skipped, unexpected path format",
+					action.getPath());
+
+				continue;
+			}
+
+			String className = path.substring(1, index);
 			List<Action> classActions = actionsMap.get(className);
 
 			if (classActions == null) {
@@ -54,9 +64,19 @@ public abstract class BaseBuilder implements Builder {
 		}
 
 		for (Entry<String, List<Action>> entry : actionsMap.entrySet()) {
-			build(
-				discovery, entry.getValue(), packageName, version,
-				entry.getKey(), destination);
+			try {
+				build(
+					discovery, entry.getValue(), packageName, version,
+					entry.getKey(), destination);
+			}
+			catch (Exception e) {
+				_log.log(
+					Level.SEVERE, "Could not generate classes for action " +
+						entry.getKey(),
+					e);
+
+				continue;
+			}
 		}
 	}
 
@@ -75,5 +95,8 @@ public abstract class BaseBuilder implements Builder {
 	protected static final String LANGUAGE_UTIL = "languageUtil";
 
 	protected static final String VOID = "VOID";
+
+	private static final Logger _log = Logger.getLogger(
+		BaseBuilder.class.getName());
 
 }

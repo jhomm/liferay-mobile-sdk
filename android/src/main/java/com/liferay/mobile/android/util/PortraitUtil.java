@@ -15,26 +15,26 @@
 package com.liferay.mobile.android.util;
 
 import android.util.Base64;
-import android.util.Log;
 
+import com.liferay.mobile.android.callback.file.FileProgressCallback;
+import com.liferay.mobile.android.http.Headers;
 import com.liferay.mobile.android.http.HttpUtil;
+import com.liferay.mobile.android.http.Response;
 import com.liferay.mobile.android.service.Session;
 
 import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 import java.net.URLEncoder;
 
 import java.security.MessageDigest;
 
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * @author Bruno Farache
@@ -43,57 +43,54 @@ import org.apache.http.client.methods.HttpGet;
 public class PortraitUtil {
 
 	public static String downloadPortrait(
-			Session session, String portraitURL, OutputStream os)
-		throws Exception {
-
-		return downloadPortrait(session, portraitURL, os, null);
-	}
-
-	public static String downloadPortrait(
-			Session session, String portraitURL, OutputStream os,
+			Session session, String portraitURL, final OutputStream os,
 			String modifiedDate)
 		throws Exception {
 
 		String lastModified = null;
-		InputStream is = null;
 
 		try {
-			HttpGet get = new HttpGet(portraitURL);
+			Map<String, String> headers = new HashMap<String, String>();
 
 			if (Validator.isNotNull(modifiedDate)) {
-				get.addHeader(HttpUtil.IF_MODIFIED_SINCE, modifiedDate);
+				headers.put(Headers.IF_MODIFIED_SINCE, modifiedDate);
 			}
 
-			HttpClient client = HttpUtil.getClient(session);
-			HttpResponse response = client.execute(get);
+			session.setHeaders(headers);
 
-			int status = response.getStatusLine().getStatusCode();
+			Response response = HttpUtil.download(
+				session, portraitURL, new FileProgressCallback() {
 
-			if (status == HttpStatus.SC_OK) {
-				is = response.getEntity().getContent();
-
-				int count;
-				byte data[] = new byte[8192];
-
-				while ((count = is.read(data)) != -1) {
-					os.write(data, 0, count);
+				@Override
+				public void onBytes(byte[] bytes) {
+					try {
+						os.write(bytes);
+					}
+					catch (IOException ioe) {
+						setCancelled(true);
+					}
 				}
 
-				Header header = response.getLastHeader(HttpUtil.LAST_MODIFIED);
-				lastModified = header.getValue();
-			}
-		}
-		catch (Exception e) {
-			Log.e(_CLASS_NAME, "Couldn't download portrait", e);
+				@Override
+				public void onProgress(int totalBytes) {
+				}
 
-			throw e;
+			});
+
+			lastModified = response.getHeaders().get(Headers.LAST_MODIFIED);
 		}
 		finally {
-			close(is);
 			close(os);
 		}
 
 		return lastModified;
+	}
+
+	public static String downloadPortrait(
+			Session session, String portraitURL, OutputStream os)
+		throws Exception {
+
+		return downloadPortrait(session, portraitURL, os, null);
 	}
 
 	public static String downloadPortrait(
@@ -113,7 +110,8 @@ public class PortraitUtil {
 	}
 
 	public static String getPortraitURL(
-		Session session, boolean male, long portraitId, String uuid) {
+			Session session, boolean male, long portraitId, String uuid)
+		throws Exception {
 
 		StringBuilder sb = new StringBuilder();
 
@@ -134,36 +132,32 @@ public class PortraitUtil {
 		return sb.toString();
 	}
 
-	protected static void appendToken(StringBuilder sb, String uuid) {
+	protected static void appendToken(StringBuilder sb, String uuid)
+		throws Exception {
+
 		if (Validator.isNull(uuid)) {
 			return;
 		}
 
+		MessageDigest digest = MessageDigest.getInstance("SHA-1");
+		digest.update(uuid.getBytes());
+
+		byte[] bytes = digest.digest();
+
+		String token = null;
+
 		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-1");
-			digest.update(uuid.getBytes());
-
-			byte[] bytes = digest.digest();
-			String token = null;
-
-			try {
-				token = Base64.encodeToString(bytes, Base64.NO_WRAP);
-			}
-			catch (RuntimeException re) {
-				if ("Stub!".equals(re.getMessage())) {
-					token =
-						org.apache.commons.codec.binary.Base64.
-							encodeBase64String(bytes);
-				}
-			}
-
-			if (token != null) {
-				sb.append("&img_id_token=");
-				sb.append(URLEncoder.encode(token, "UTF8"));
+			token = Base64.encodeToString(bytes, Base64.NO_WRAP);
+		}
+		catch (RuntimeException re) {
+			if ("Stub!".equals(re.getMessage())) {
+				token = DatatypeConverter.printBase64Binary(bytes);
 			}
 		}
-		catch (Exception e) {
-			Log.e(_CLASS_NAME, "Couldn't generate portrait image token", e);
+
+		if (token != null) {
+			sb.append("&img_id_token=");
+			sb.append(URLEncoder.encode(token, "UTF8"));
 		}
 	}
 
@@ -176,7 +170,5 @@ public class PortraitUtil {
 			}
 		}
 	}
-
-	private static final String _CLASS_NAME = PortraitUtil.class.getName();
 
 }

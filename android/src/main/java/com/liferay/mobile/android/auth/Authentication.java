@@ -14,13 +14,13 @@
 
 package com.liferay.mobile.android.auth;
 
-import org.apache.http.HttpRequest;
+import com.liferay.mobile.android.http.Request;
 
 /**
  * @author Bruno Farache
  */
 public interface Authentication {
 
-	public void authenticate(HttpRequest request) throws Exception;
+	void authenticate(Request request) throws Exception;
 
 }

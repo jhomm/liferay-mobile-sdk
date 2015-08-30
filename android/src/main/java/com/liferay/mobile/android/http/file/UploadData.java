@@ -14,72 +14,56 @@
 
 package com.liferay.mobile.android.http.file;
 
-import java.io.IOException;
+import com.liferay.mobile.android.callback.file.FileProgressCallback;
+
 import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.http.client.methods.HttpPostHC4;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.content.InputStreamBody;
-
-import static com.liferay.mobile.android.http.file.FileTransferUtil.*;
 
 /**
  * @author Igor Oliveira
+ * @author Bruno Farache
  */
-public class UploadData extends InputStreamBody {
-
-	public UploadData(
-		InputStream is, ContentType mimeType, String fileName,
-		FileProgressCallback callback) {
-
-		super(is, mimeType, fileName);
-		this.callback = callback;
-	}
-
-	public UploadData(
-		InputStream is, OutputStream extraOutputStream, String fileName,
-		FileProgressCallback callback) {
-
-		this(is, fileName, callback);
-		this.os = extraOutputStream;
-	}
+public class UploadData {
 
 	public UploadData(
 		InputStream is, String fileName, FileProgressCallback callback) {
 
-		this(is, ContentType.DEFAULT_BINARY, fileName, callback);
+		this(is, null, fileName, callback);
 	}
 
-	public void setRequest(HttpPostHC4 request) {
-		this.request = request;
+	public UploadData(
+		InputStream is, String mimeType, String fileName,
+		FileProgressCallback callback) {
+
+		this.is = is;
+
+		if (mimeType == null) {
+			mimeType = "application/octet-stream";
+		}
+
+		this.mimeType = mimeType;
+		this.fileName = fileName;
+		this.callback = callback;
 	}
 
-	@Override
-	public void writeTo(OutputStream outputStream) throws IOException {
-		if (outputStream == null) {
-			throw new IllegalArgumentException("OutputStream may not be null");
-		}
+	public FileProgressCallback getCallback() {
+		return callback;
+	}
 
-		InputStream is = getInputStream();
+	public String getFileName() {
+		return fileName;
+	}
 
-		if (os != null) {
-			os = new MultiOutputStream(outputStream, os);
-		}
-		else {
-			os = outputStream;
-		}
+	public InputStream getInputStream() {
+		return is;
+	}
 
-		try {
-			transfer(request, is, os, callback);
-		}
-		finally {
-			close(is);
-		}
+	public String getMimeType() {
+		return mimeType;
 	}
 
 	protected FileProgressCallback callback;
-	protected OutputStream os;
-	protected HttpPostHC4 request;
+	protected String fileName;
+	protected InputStream is;
+	protected String mimeType;
 
 }

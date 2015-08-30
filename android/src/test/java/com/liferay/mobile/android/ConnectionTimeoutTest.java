@@ -20,7 +20,7 @@ import com.liferay.mobile.android.v62.group.GroupService;
 
 import java.io.IOException;
 
-import org.apache.http.conn.ConnectTimeoutException;
+import java.net.SocketTimeoutException;
 
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class ConnectionTimeoutTest extends BaseTest {
 		super();
 	}
 
-	@Test(expected = ConnectTimeoutException.class)
+	@Test(expected = SocketTimeoutException.class)
 	public void connectionTimeoutException() throws Exception {
 		Session session = new SessionImpl(this.session);
 

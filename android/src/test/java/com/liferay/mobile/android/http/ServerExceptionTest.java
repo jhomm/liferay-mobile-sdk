@@ -15,6 +15,7 @@
 package com.liferay.mobile.android.http;
 
 import com.liferay.mobile.android.BaseTest;
+import com.liferay.mobile.android.exception.AuthenticationException;
 import com.liferay.mobile.android.exception.ServerException;
 
 import java.io.IOException;
@@ -33,6 +34,25 @@ public class ServerExceptionTest extends BaseTest {
 
 	public ServerExceptionTest() throws IOException {
 		super();
+	}
+
+	@Test
+	public void authenticationException() throws Exception {
+		final JSONObject json = new JSONObject();
+
+		String exception = "java.lang.SecurityException";
+
+		json.put("exception", "java.lang.SecurityException");
+		json.put("message", "Authenticated access required");
+
+		try {
+			Response response = new Response();
+			response.checkPortalException(json.toString());
+			fail("Should have thrown AuthenticationException");
+		}
+		catch (AuthenticationException ae) {
+			assertEquals(exception, ae.getMessage());
+		}
 	}
 
 	@Test
@@ -55,7 +75,8 @@ public class ServerExceptionTest extends BaseTest {
 		json.put("message", message);
 
 		try {
-			HttpUtil.handlePortalException(json.toString());
+			Response response = new Response();
+			response.checkPortalException(json.toString());
 			fail("Should have detected portal exception.");
 		}
 		catch (ServerException se) {
@@ -74,7 +95,8 @@ public class ServerExceptionTest extends BaseTest {
 		json.put("exception", exception);
 
 		try {
-			HttpUtil.handlePortalException(json.toString());
+			Response response = new Response();
+			response.checkPortalException(json.toString());
 			fail("Should have detected portal exception.");
 		}
 		catch (ServerException se) {
@@ -96,7 +118,8 @@ public class ServerExceptionTest extends BaseTest {
 		json.put("message", folderName);
 
 		try {
-			HttpUtil.handlePortalException(json.toString());
+			Response response = new Response();
+			response.checkPortalException(json.toString());
 			fail("Should have detected portal exception.");
 		}
 		catch (ServerException se) {
@@ -128,7 +151,8 @@ public class ServerExceptionTest extends BaseTest {
 		json.put("error", error);
 
 		try {
-			HttpUtil.handlePortalException(json.toString());
+			Response response = new Response();
+			response.checkPortalException(json.toString());
 			fail("Should have detected portal exception.");
 		}
 		catch (ServerException se) {

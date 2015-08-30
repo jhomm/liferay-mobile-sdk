@@ -14,36 +14,19 @@
 
 package com.liferay.mobile.android.http;
 
-import com.liferay.mobile.android.auth.Authentication;
-import com.liferay.mobile.android.auth.basic.DigestAuthentication;
-import com.liferay.mobile.android.exception.RedirectException;
-import com.liferay.mobile.android.exception.ServerException;
+import com.liferay.mobile.android.callback.BaseCallback;
+import com.liferay.mobile.android.callback.Callback;
+import com.liferay.mobile.android.callback.file.DownloadCallback;
+import com.liferay.mobile.android.callback.file.FileProgressCallback;
+import com.liferay.mobile.android.callback.file.UploadCallback;
+import com.liferay.mobile.android.http.client.HttpClient;
+import com.liferay.mobile.android.http.client.OkHttpClientImpl;
 import com.liferay.mobile.android.service.Session;
-import com.liferay.mobile.android.util.Validator;
-
-import java.io.IOException;
-
-import java.net.URI;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.ProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGetHC4;
-import org.apache.http.client.methods.HttpPostHC4;
-import org.apache.http.entity.StringEntityHC4;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
+
+import static com.liferay.mobile.android.http.file.FileProgressUtil.transfer;
 
 /**
  * @author Bruno Farache
@@ -51,100 +34,47 @@ import org.json.JSONObject;
  */
 public class HttpUtil {
 
-	public static final String IF_MODIFIED_SINCE = "If-Modified-Since";
-
 	public static final String JSONWS_PATH_61 = "api/secure/jsonws";
 
 	public static final String JSONWS_PATH_62 = "api/jsonws";
 
-	public static final String LAST_MODIFIED = "Last-Modified";
-
-	public static void checkStatusCode(
-			HttpRequest request, HttpResponse response)
-		throws ServerException {
-
-		int status = response.getStatusLine().getStatusCode();
-
-		if ((status == HttpStatus.SC_MOVED_PERMANENTLY) ||
-			(status == HttpStatus.SC_MOVED_TEMPORARILY) ||
-			(status == HttpStatus.SC_SEE_OTHER) ||
-			(status == HttpStatus.SC_TEMPORARY_REDIRECT)) {
-
-			throw new RedirectException(getRedirectUrl(request, response));
-		}
-
-		if (status == HttpStatus.SC_UNAUTHORIZED) {
-			throw new ServerException("Authentication failed.");
-		}
-
-		if (status != HttpStatus.SC_OK) {
-			throw new ServerException(
-				"Request failed. Response code: " + status);
-		}
+	public static void cancel(Object tag) {
+		client.cancel(tag);
 	}
 
-	public static HttpClient getClient(Session session) {
-		return getClientBuilder(session).build();
-	}
-
-	public static HttpClientBuilder getClientBuilder(Session session) {
-		HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-
-		RequestConfig.Builder requestBuilder = RequestConfig.custom();
-		int timeout = session.getConnectionTimeout();
-		requestBuilder = requestBuilder.setConnectTimeout(timeout);
-		requestBuilder = requestBuilder.setConnectionRequestTimeout(timeout);
-
-		clientBuilder.setDefaultRequestConfig(requestBuilder.build());
-		clientBuilder.setRedirectStrategy(new DefaultRedirectStrategy() {
-
-			@Override
-			protected boolean isRedirectable(String method) {
-				return false;
-			}
-
-		});
-
-		Authentication auth = session.getAuthentication();
-
-		if ((auth != null) && (auth instanceof DigestAuthentication)) {
-			DigestAuthentication digest = (DigestAuthentication)auth;
-			digest.authenticate(clientBuilder);
-		}
-
-		return clientBuilder;
-	}
-
-	public static HttpGetHC4 getHttpGet(Session session, String URL)
+	public static Response download(
+			Session session, String url, FileProgressCallback callback)
 		throws Exception {
 
-		HttpGetHC4 httpGet = new HttpGetHC4(URL);
+		Callback sessionCallback = session.getCallback();
 
-		authenticate(session, httpGet);
+		if (sessionCallback != null) {
+			sessionCallback = new DownloadCallback(sessionCallback, callback);
+		}
 
-		return httpGet;
-	}
+		Request request = new Request(
+			session.getAuthentication(), Method.GET, session.getHeaders(), url,
+			null, session.getConnectionTimeout(), sessionCallback);
 
-	public static HttpPostHC4 getHttpPost(Session session, String URL)
-		throws Exception {
+		if (sessionCallback != null) {
+			((DownloadCallback)sessionCallback).setTag(request.getTag());
+		}
 
-		HttpPostHC4 httpPost = new HttpPostHC4(URL);
+		Response response = send(request);
 
-		authenticate(session, httpPost);
-
-		return httpPost;
-	}
-
-	public static String getResponseString(HttpResponse response)
-		throws IOException {
-
-		HttpEntity entity = response.getEntity();
-
-		if (entity == null) {
+		if (response == null) {
 			return null;
 		}
+		else {
+			transfer(
+				response.getBodyAsStream(), callback, request.getTag(), null);
 
-		return EntityUtils.toString(entity);
+			return response;
+		}
+	}
+
+	public static String encodeURLPath(String path) {
+		return client.encodeURL(path);
 	}
 
 	public static String getURL(Session session, String path) {
@@ -164,28 +94,24 @@ public class HttpUtil {
 		return sb.toString();
 	}
 
-	public static void handleServerError(
-			HttpRequest request, HttpResponse response, String json)
-		throws ServerException {
-
-		checkStatusCode(request, response);
-		handlePortalException(json);
-	}
-
 	public static JSONArray post(Session session, JSONArray commands)
 		throws Exception {
 
-		HttpClient client = getClient(session);
-		HttpPostHC4 request = getHttpPost(session, getURL(session, "/invoke"));
+		String url = getURL(session, "/invoke");
 
-		request.setEntity(new StringEntityHC4(commands.toString(), "UTF-8"));
+		Request request = new Request(
+			session.getAuthentication(), Method.POST, session.getHeaders(), url,
+			commands.toString(), session.getConnectionTimeout(),
+			session.getCallback());
 
-		HttpResponse response = client.execute(request);
-		String json = HttpUtil.getResponseString(response);
+		Response response = client.send(request);
 
-		handleServerError(request, response, json);
-
-		return new JSONArray(json);
+		if (response == null) {
+			return null;
+		}
+		else {
+			return new JSONArray(response.getBody());
+		}
 	}
 
 	public static JSONArray post(Session session, JSONObject command)
@@ -197,77 +123,42 @@ public class HttpUtil {
 		return post(session, commands);
 	}
 
+	public static Response send(Request request) throws Exception {
+		return client.send(request);
+	}
+
 	@SuppressWarnings("unused")
 	public static void setJSONWSPath(String jsonwsPath) {
 		_JSONWS_PATH = jsonwsPath;
 	}
 
-	protected static void authenticate(Session session, HttpRequest request)
+	public static JSONArray upload(Session session, JSONObject command)
 		throws Exception {
 
-		Authentication auth = session.getAuthentication();
+		String path = (String)command.keys().next();
 
-		if (auth != null) {
-			auth.authenticate(request);
+		Callback sessionCallback = session.getCallback();
+
+		if (sessionCallback != null) {
+			sessionCallback = new UploadCallback((BaseCallback)sessionCallback);
+		}
+
+		Request request = new Request(
+			session.getAuthentication(), Method.POST, session.getHeaders(),
+			getURL(session, path), command.getJSONObject(path),
+			session.getConnectionTimeout(), sessionCallback);
+
+		Response response = client.upload(request);
+
+		if (response == null) {
+			return null;
+		}
+		else {
+			return new JSONArray(UploadCallback.wrap(response.getBody()));
 		}
 	}
 
-	protected static String getRedirectUrl(
-			HttpRequest request, HttpResponse response)
-		throws ServerException {
-
-		try {
-			DefaultRedirectStrategy redirect = new DefaultRedirectStrategy();
-			HttpContext context = new BasicHttpContext();
-
-			URI uri = redirect.getLocationURI(request, response, context);
-			String url = uri.toString();
-
-			if (url.endsWith("/")) {
-				url = url.substring(0, url.length() - 1);
-			}
-
-			return url;
-		}
-		catch (ProtocolException pe) {
-			throw new ServerException(pe);
-		}
-	}
-
-	protected static void handlePortalException(String json)
-		throws ServerException {
-
-		try {
-			if (isJSONObject(json)) {
-				JSONObject jsonObj = new JSONObject(json);
-
-				if (jsonObj.has("exception")) {
-					String message = jsonObj.getString("exception");
-					String detail = jsonObj.optString("message", null);
-
-					JSONObject error = jsonObj.optJSONObject("error");
-
-					if (error != null) {
-						message = error.getString("type");
-						detail = error.getString("message");
-					}
-
-					throw new ServerException(message, detail);
-				}
-			}
-		}
-		catch (JSONException je) {
-			throw new ServerException(je);
-		}
-	}
-
-	protected static boolean isJSONObject(String json) {
-		if (Validator.isNotNull(json) && json.startsWith("{")) {
-			return true;
-		}
-
-		return false;
-	}
+	protected static HttpClient client = new OkHttpClientImpl();
 
 	private static String _JSONWS_PATH = JSONWS_PATH_62;
 

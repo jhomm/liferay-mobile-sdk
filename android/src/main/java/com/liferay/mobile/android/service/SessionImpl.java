@@ -15,14 +15,14 @@
 package com.liferay.mobile.android.service;
 
 import com.liferay.mobile.android.auth.Authentication;
+import com.liferay.mobile.android.callback.Callback;
 import com.liferay.mobile.android.http.HttpUtil;
 import com.liferay.mobile.android.http.file.UploadData;
-import com.liferay.mobile.android.http.file.UploadUtil;
-import com.liferay.mobile.android.task.ServiceAsyncTask;
-import com.liferay.mobile.android.task.UploadAsyncTask;
-import com.liferay.mobile.android.task.callback.AsyncTaskCallback;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -45,29 +45,28 @@ public class SessionImpl implements Session {
 		this(server, null, null);
 	}
 
-	public SessionImpl(String server, AsyncTaskCallback callback) {
-		this(server, null, callback);
-	}
-
 	public SessionImpl(String server, Authentication authentication) {
 		this(server, authentication, null);
 	}
 
 	public SessionImpl(
-		String server, Authentication authentication,
-		AsyncTaskCallback callback) {
+		String server, Authentication authentication, Callback callback) {
 
 		this(server, authentication, DEFAULT_CONNECTION_TIMEOUT, callback);
 	}
 
 	public SessionImpl(
 		String server, Authentication authentication, int connectionTimeout,
-		AsyncTaskCallback callback) {
+		Callback callback) {
 
 		this.server = server;
 		this.authentication = authentication;
 		this.connectionTimeout = connectionTimeout;
 		this.callback = callback;
+	}
+
+	public SessionImpl(String server, Callback callback) {
+		this(server, null, callback);
 	}
 
 	@Override
@@ -76,7 +75,7 @@ public class SessionImpl implements Session {
 	}
 
 	@Override
-	public AsyncTaskCallback getCallback() {
+	public Callback getCallback() {
 		return callback;
 	}
 
@@ -86,21 +85,18 @@ public class SessionImpl implements Session {
 	}
 
 	@Override
+	public Map<String, String> getHeaders() {
+		return Collections.unmodifiableMap(headers);
+	}
+
+	@Override
 	public String getServer() {
 		return server;
 	}
 
 	@Override
 	public JSONArray invoke(JSONObject command) throws Exception {
-		if (callback != null) {
-			ServiceAsyncTask task = new ServiceAsyncTask(this, callback);
-			task.execute(command);
-
-			return null;
-		}
-		else {
-			return HttpUtil.post(this, command);
-		}
+		return HttpUtil.post(this, command);
 	}
 
 	@Override
@@ -109,13 +105,18 @@ public class SessionImpl implements Session {
 	}
 
 	@Override
-	public void setCallback(AsyncTaskCallback callback) {
+	public void setCallback(Callback callback) {
 		this.callback = callback;
 	}
 
 	@Override
 	public void setConnectionTimeout(int connectionTimeout) {
 		this.connectionTimeout = connectionTimeout;
+	}
+
+	@Override
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
 	}
 
 	@Override
@@ -129,15 +130,7 @@ public class SessionImpl implements Session {
 			return invoke(command);
 		}
 
-		if (callback != null) {
-			UploadAsyncTask task = new UploadAsyncTask(this, callback);
-			task.execute(command);
-
-			return null;
-		}
-		else {
-			return UploadUtil.upload(this, command);
-		}
+		return HttpUtil.upload(this, command);
 	}
 
 	protected boolean hasUploadData(JSONObject command) throws JSONException {
@@ -162,8 +155,9 @@ public class SessionImpl implements Session {
 	}
 
 	protected Authentication authentication;
-	protected AsyncTaskCallback callback;
+	protected Callback callback;
 	protected int connectionTimeout;
+	protected Map<String, String> headers = new HashMap<String, String>();
 	protected String server;
 
 }

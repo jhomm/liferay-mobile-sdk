@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.WordUtils;
 
@@ -54,7 +56,22 @@ public class LanguageUtil {
 			_classNames.load(is);
 		}
 		catch (IOException ioe) {
-			ioe.printStackTrace();
+			_log.log(
+				Level.SEVERE, "Could not load class-names.properties", ioe);
+		}
+
+		InputStream ext = getClass().getResourceAsStream(
+			"/class-names-ext.properties");
+
+		if (ext != null) {
+			try {
+				_classNames.load(ext);
+			}
+			catch (IOException ioe) {
+				_log.log(
+					Level.SEVERE, "Could not load class-names-ext.properties",
+					ioe);
+			}
 		}
 	}
 
@@ -141,6 +158,9 @@ public class LanguageUtil {
 
 		return false;
 	}
+
+	private static final Logger _log = Logger.getLogger(
+		LanguageUtil.class.getName());
 
 	private Properties _classNames;
 
